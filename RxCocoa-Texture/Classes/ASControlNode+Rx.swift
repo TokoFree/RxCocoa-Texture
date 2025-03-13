@@ -5,35 +5,35 @@
 //  Copyright © 2018 RxSwiftCommunity. All rights reserved.
 //
 
-
 import AsyncDisplayKit
-import RxSwift
 import RxCocoa
+import RxSwift
 
 extension Reactive where Base: ASControlNode {
-    
+
     /// Reactive wrapper for target action pattern.
     ///
     /// - parameter controlEvents: Filter for observed ASControlNodeEvent types.
     public func controlEvent(_ controlEvents: ASControlNodeEvent) -> ControlEvent<Base> {
-        
-        let source: Observable<Base> = Observable
+
+        let source: Observable<Base> =
+            Observable
             .create { [weak control = self.base] observer in
                 MainScheduler.ensureExecutingOnScheduler()
-                
+
                 guard let control = control else {
                     observer.on(.completed)
                     return Disposables.create()
                 }
-                
+
                 let controlTarget = ASControlTarget(control, controlEvents) { control in
                     observer.on(.next(control))
                 }
-                
+
                 return Disposables.create(with: controlTarget.dispose)
             }
             .takeUntil(deallocated)
-        
+
         return ControlEvent(events: source)
     }
 
@@ -45,7 +45,7 @@ extension Reactive where Base: ASControlNode {
     public func controlProperty<T>(
         editingEvents: ASControlNodeEvent,
         getter: @escaping (Base) -> T,
-        setter: @escaping (Base, T) -> ()
+        setter: @escaping (Base, T) -> Void
     ) -> ControlProperty<T> {
         let source: Observable<T> = Observable.create { [weak weakControl = base] observer in
             guard let control = weakControl else {
@@ -69,35 +69,43 @@ extension Reactive where Base: ASControlNode {
 
         return ControlProperty<T>(values: source, valueSink: bindingObserver)
     }
-    
+
     public var tap: ControlEvent<Void> {
-        
-        let source = self.controlEvent(.touchUpInside).map { _ in return }
+
+        let source = self.controlEvent(.touchUpInside).map { [weak control = self.base] _ in
+            guard let control else {
+                return
+            }
+            RxCocoaLastClickDebugger.setClassName(
+                "\(RxCocoaLastClickDebugger.findInherenceNode(in: control.view))-Control+RX"
+            )
+            return
+        }
         return ControlEvent(events: source)
     }
-    
+
     public func tap(to relay: PublishRelay<()>) -> Disposable {
-        
+
         return self.controlEvent(.touchUpInside)
             .map { _ in return }
             .asSignal(onErrorJustReturn: ())
             .emit(to: relay)
     }
-    
+
     public var isHidden: ASBinder<Bool> {
-        
+
         return ASBinder(self.base) { node, isHidden in
             node.isHidden = isHidden
         }
     }
-    
+
     public var isEnabled: ASBinder<Bool> {
-        
+
         return ASBinder(self.base) { node, isEnabled in
             node.isEnabled = isEnabled
         }
     }
-    
+
     public var isHighlighted: ControlProperty<Bool> {
 
         return self.controlProperty(
@@ -110,9 +118,9 @@ extension Reactive where Base: ASControlNode {
             }
         )
     }
-    
+
     public var isSelected: ASBinder<Bool> {
-        
+
         return ASBinder(self.base) { node, isSelected in
             node.isSelected = isSelected
         }
