@@ -77,7 +77,8 @@ extension Reactive where Base: ASControlNode {
                 return
             }
             RxCocoaLastClickDebugger.setClassName(
-                "\(RxCocoaLastClickDebugger.findInherenceNode(in: control.view))-Control+RX"
+                "\(RxCocoaLastClickDebugger.findInherenceNode(in: control.view))",
+                groupID: "ASControlNode"
             )
             return
         }
