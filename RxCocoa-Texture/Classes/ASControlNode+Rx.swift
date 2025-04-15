@@ -76,10 +76,7 @@ extension Reactive where Base: ASControlNode {
             guard let control else {
                 return
             }
-            RxCocoaLastClickDebugger.setClassName(
-                "\(RxCocoaLastClickDebugger.findInherenceNode(in: control.view))",
-                groupID: "ASControlNode"
-            )
+            ASControlNode.didTapLoggingData?(control.view)
             return
         }
         return ControlEvent(events: source)
@@ -126,4 +123,8 @@ extension Reactive where Base: ASControlNode {
             node.isSelected = isSelected
         }
     }
+}
+
+extension ASControlNode {
+    public static var didTapLoggingData: ((UIView) -> Void)?
 }
